@@ -1,0 +1,8 @@
+[package]
+name = "dars"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+dars-macros = { path = "../dars-macros" }

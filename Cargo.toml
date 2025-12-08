@@ -1,0 +1,9 @@
+[workspace]
+resolver = "2"
+members = ["dars", "dars-macros"]
+
+
+[profile.release]
+opt-level = 3
+debug = "limited"
+strip = "debuginfo"
