@@ -1,18 +1,20 @@
+use proc_macro2::{Span, TokenStream};
+use quote::{ToTokens, format_ident, quote};
 use syn::{
-    Attribute, Expr, Field, Ident, Lit, MetaNameValue, Token, braced,
+    Attribute, Expr, Field, Ident, Lit, MetaNameValue, Token, Type, braced,
     parse::{Parse, ParseStream},
     spanned::Spanned,
 };
 
-#[derive(Debug)]
 struct InputField {
     name: String,
+    ty: Type,
     desc: Option<String>,
 }
 
-#[derive(Debug)]
 struct OutputField {
     name: String,
+    ty: Type,
     desc: Option<String>,
 }
 
@@ -45,7 +47,6 @@ impl Parse for Instruction {
     }
 }
 
-#[derive(Debug)]
 pub struct Signature {
     name: String,
     instruction: Option<String>,
@@ -54,7 +55,7 @@ pub struct Signature {
 }
 
 impl Signature {
-    pub fn with_instruction(self, instruction: Instruction) -> Self {
+    pub(crate) fn with_instruction(self, instruction: Instruction) -> Self {
         Self {
             instruction: instruction.instruction,
             ..self
@@ -88,20 +89,23 @@ impl Parse for Signature {
                 if attr.path().is_ident("input") {
                     inputs.push(InputField {
                         name,
+                        ty: field.ty,
                         desc: parse_desc(&attr)?,
                     });
-                } else if attr.path().is_ident("output") {
+                    break;
+                }
+                if attr.path().is_ident("output") {
                     outputs.push(OutputField {
                         name,
+                        ty: field.ty,
                         desc: parse_desc(&attr)?,
                     });
-                } else {
-                    return Err(syn::Error::new(
-                        attr.span(),
-                        format!("Unknown attribute on field {name}"),
-                    ));
+                    break;
                 }
-                break;
+                return Err(syn::Error::new(
+                    attr.span(),
+                    format!("Unknown attribute on field {name}"),
+                ));
             }
         }
 
@@ -111,6 +115,66 @@ impl Parse for Signature {
             inputs,
             outputs,
         })
+    }
+}
+
+impl ToTokens for Signature {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let instruction = self.instruction.as_ref();
+        println!("instruction: {:?}", instruction);
+        let name = format_ident!("{}", self.name);
+
+        let input_struct = format_ident!("{}Input", self.name);
+        let inputs = self.inputs.iter().map(|input| {
+            let name = Ident::new(&input.name, Span::call_site());
+            let ty = input.ty.clone();
+            quote! {
+                pub #name: #ty
+            }
+        });
+
+        let output_struct = format_ident!("{}Output", self.name);
+        let outputs = self.outputs.iter().map(|output| {
+            let name = Ident::new(&output.name, Span::call_site());
+            let ty = output.ty.clone();
+            quote! {
+                pub #name: #ty
+            }
+        });
+
+        let expanded = quote! {
+            // Input struct
+            #[derive(Debug, dars::serde::Serialize, dars::schemars::JsonSchema)]
+            struct #input_struct {
+                #(#inputs)*
+            }
+
+            // Output struct
+            #[derive(Debug, dars::serde::Deserialize, dars::schemars::JsonSchema)]
+            struct #output_struct {
+                #(#outputs)*
+            }
+
+            // Base signature struct
+            #[derive(Debug)]
+            struct #name {
+                instruction: Option<String>,
+            }
+
+            impl #name {
+                pub fn new() -> Self {
+                    Self {
+                        instruction: Some("foo".into())
+                    }
+                }
+            }
+
+            impl dars::Signature for #name {
+                type Input = #input_struct;
+                type Output = #output_struct;
+            }
+        };
+        tokens.extend(expanded);
     }
 }
 
