@@ -1,7 +1,7 @@
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::{ToTokens, quote};
 use syn::{
-    Field, Ident, Token, Type, braced,
+    Field, Ident, LitStr, Token, Type, Visibility, braced,
     parse::{Parse, ParseStream},
     spanned::Spanned,
 };
@@ -15,12 +15,14 @@ struct ModelField {
 }
 
 pub struct Model {
+    vis: Visibility,
     name: Ident,
     fields: Vec<ModelField>,
 }
 
 impl Parse for Model {
     fn parse(input: ParseStream) -> syn::Result<Self> {
+        let vis = input.parse::<Visibility>()?;
         let _ = input.parse::<Token![struct]>()?;
         let name: Ident = input.parse()?;
 
@@ -54,14 +56,14 @@ impl Parse for Model {
                 desc,
             });
         }
-        Ok(Model { name, fields })
+        Ok(Model { vis, name, fields })
     }
 }
 
 impl ToTokens for Model {
     fn to_tokens(&self, tokens: &mut TokenStream) {
+        let vis = &self.vis;
         let name = &self.name;
-        // println!("model name: {:?}", name);
         let fields = self.fields.iter().map(|field| {
             let name = &field.name;
             let ty = &field.ty;
@@ -69,10 +71,33 @@ impl ToTokens for Model {
                 pub #name: #ty,
             }
         });
+        let fields_names = self.fields.iter().map(|field| {
+            let name = LitStr::new(&field.name.to_string(), Span::call_site());
+            match &field.desc {
+                Some(desc) => {
+                    let desc = LitStr::new(desc, Span::call_site());
+                    quote! {
+                        (#name, Some(#desc))
+                    }
+                }
+                None => {
+                    quote! {
+                        (#name, None)
+                    }
+                }
+            }
+        });
         let expanded = quote! {
             #[derive(Debug, dars::serde::Serialize, dars::serde::Deserialize, dars::schemars::JsonSchema)]
-            struct #name {
+            #vis struct #name {
                 #(#fields)*
+            }
+
+            impl dars::Model for #name {
+                #[inline]
+                fn fields() -> &'static [(&'static str, Option<&'static str>)] {
+                    &[#(#fields_names,)*]
+                }
             }
         };
         tokens.extend(expanded);

@@ -1,25 +1,26 @@
 use std::fmt::Debug;
 
-use schemars::JsonSchema;
-use serde::{Serialize, de::DeserializeOwned};
-
-pub trait SignatureInput: Debug + Serialize + JsonSchema + Send + Sync + 'static {}
-
-pub trait SignatureOutput: Debug + DeserializeOwned + JsonSchema + Send + Sync + 'static {}
+use crate::model::Model;
 
 pub trait Signature
 where
     Self: Sized + Debug + Send + Sync + 'static,
 {
-    type Input: SignatureInput;
-    type Output: SignatureOutput;
+    type Input: Model;
+    type Output: Model;
 
     /// Returns the instruction for the signature.
     fn instruction(&self) -> &str;
 
+    /// Returns input fields for the signature.
+    fn input_fields(&self) -> &[(&'static str, Option<&'static str>)];
+
     /// Returns the input schema for the signature.
-    fn input_schema(&self) -> schemars::Schema;
+    fn input_schema(&self) -> &schemars::Schema;
+
+    /// Returns output fields for the signature.
+    fn output_fields(&self) -> &[(&'static str, Option<&'static str>)];
 
     /// Returns the output schema for the signature.
-    fn output_schema(&self) -> schemars::Schema;
+    fn output_schema(&self) -> &schemars::Schema;
 }

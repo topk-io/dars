@@ -1,9 +1,8 @@
 use dars::{Model, Module, Predict, Signature};
-use schemars::schema_for;
 
 #[Model]
 struct Step {
-    #[field(desc = "foo")]
+    #[field(desc = "foobarbaz")]
     id: u16,
 
     #[field(desc = "The step dependencies")]
@@ -22,16 +21,20 @@ struct Plan {
 
 #[tokio::main]
 async fn main() {
-    println!("Hello, world!");
-
-    let output_schema = schema_for!(PlanOutput);
-    println!("{}", serde_json::to_string_pretty(&output_schema).unwrap());
-
     let sig = Plan::new();
-    println!("plan: {:?}", sig.input_schema());
-    println!("plan: {:?}", sig.output_schema());
+    println!("input: {:?}", sig.input_schema());
+    println!("output: {:?}", sig.output_schema());
+    println!("input fields: {:?}", sig.input_fields());
+    println!("output fields: {:?}", sig.output_fields());
+
+    let step = Step {
+        id: 1,
+        dependencies: vec![],
+    };
+    println!("fields: {:?}", Step::fields());
 
     let plan = Predict::new(sig);
+
     println!(
         "plan: {:?}",
         plan.call(PlanInput {

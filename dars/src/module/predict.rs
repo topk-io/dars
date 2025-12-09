@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use super::Module;
-use crate::{Error, Signature};
+use crate::{Error, Model, Signature};
 
 pub struct Predict<S: Signature> {
     signature: S,
@@ -21,6 +21,8 @@ impl<S: Signature> Module for Predict<S> {
 
     async fn call(&self, input: Self::Input) -> Result<Self::Output, Error> {
         println!("input: {:?}", input);
+        println!("input fields: {:?}", Self::Input::fields());
+        println!("output fields: {:?}", Self::Output::fields());
         todo!()
     }
 }

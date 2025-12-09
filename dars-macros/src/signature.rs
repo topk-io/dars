@@ -1,7 +1,7 @@
 use proc_macro2::{Span, TokenStream};
 use quote::{ToTokens, format_ident, quote};
 use syn::{
-    Field, Ident, Lit, Token, Type, braced,
+    Field, Ident, Lit, LitStr, Token, Type, Visibility, braced,
     parse::{Parse, ParseStream},
     spanned::Spanned,
 };
@@ -50,7 +50,8 @@ impl Parse for Instruction {
 }
 
 pub struct Signature {
-    name: String,
+    vis: Visibility,
+    name: Ident,
     instruction: Option<String>,
     inputs: Vec<InputField>,
     outputs: Vec<OutputField>,
@@ -67,6 +68,7 @@ impl Signature {
 
 impl Parse for Signature {
     fn parse(input: ParseStream) -> syn::Result<Self> {
+        let vis = input.parse::<Visibility>()?;
         let _ = input.parse::<Token![struct]>()?;
         let name: Ident = input.parse()?;
 
@@ -111,7 +113,8 @@ impl Parse for Signature {
         }
 
         Ok(Signature {
-            name: name.to_string(),
+            vis,
+            name,
             instruction: None,
             inputs,
             outputs,
@@ -127,53 +130,78 @@ impl ToTokens for Signature {
             .map(|s| s.to_string())
             .unwrap_or_default();
 
-        let name = format_ident!("{}", self.name);
+        let name = &self.name;
+        let vis = &self.vis;
 
+        // Input fields
         let input_struct = format_ident!("{}Input", self.name);
         let inputs = self.inputs.iter().map(|input| {
             let name = Ident::new(&input.name, Span::call_site());
             let ty = input.ty.clone();
-            quote! {
-                pub #name: #ty
+            match &input.desc {
+                Some(desc) => {
+                    let desc = LitStr::new(desc, Span::call_site());
+                    quote! {
+                        #[field(desc = #desc)]
+                        pub #name: #ty,
+                    }
+                }
+                None => {
+                    quote! {
+                        pub #name: #ty
+                    }
+                }
             }
         });
 
+        // Output fields
         let output_struct = format_ident!("{}Output", self.name);
         let outputs = self.outputs.iter().map(|output| {
             let name = Ident::new(&output.name, Span::call_site());
             let ty = output.ty.clone();
-            quote! {
-                pub #name: #ty
+            match &output.desc {
+                Some(desc) => {
+                    let desc = LitStr::new(desc, Span::call_site());
+                    quote! {
+                        #[field(desc = #desc)]
+                        pub #name: #ty,
+                    }
+                }
+                None => {
+                    quote! {
+                        pub #name: #ty
+                    }
+                }
             }
         });
 
         let expanded = quote! {
-            // Input struct
-            #[derive(Debug, dars::serde::Serialize, dars::schemars::JsonSchema)]
-            struct #input_struct {
+            // Input model struct
+            #[Model]
+            #vis struct #input_struct {
                 #(#inputs)*
             }
 
-            impl dars::SignatureInput for #input_struct {}
-
-            // Output struct
-            #[derive(Debug, dars::serde::Deserialize, dars::schemars::JsonSchema)]
-            struct #output_struct {
+            // Output model struct
+            #[Model]
+            #vis struct #output_struct {
                 #(#outputs)*
             }
 
-            impl dars::SignatureOutput for #output_struct {}
-
             // Base signature struct
             #[derive(Debug)]
-            struct #name {
+            #vis struct #name {
                 instruction: String,
+                input_schema: dars::schemars::Schema,
+                output_schema: dars::schemars::Schema,
             }
 
             impl #name {
-                pub fn new() -> Self {
+                #vis fn new() -> Self {
                     Self {
                         instruction: #instruction.into(),
+                        input_schema: dars::schemars::schema_for!(#input_struct),
+                        output_schema: dars::schemars::schema_for!(#output_struct),
                     }
                 }
             }
@@ -187,14 +215,24 @@ impl ToTokens for Signature {
                     &self.instruction
                 }
 
-                #[inline(always)]
-                fn input_schema(&self) -> dars::schemars::Schema {
-                    dars::schemars::schema_for!(#input_struct)
+                #[inline]
+                fn input_fields(&self) -> &[(&'static str, Option<&'static str>)] {
+                    <#input_struct as dars::Model>::fields()
                 }
 
                 #[inline(always)]
-                fn output_schema(&self) -> dars::schemars::Schema {
-                    dars::schemars::schema_for!(#output_struct)
+                fn input_schema(&self) -> &dars::schemars::Schema {
+                    &self.input_schema
+                }
+
+                #[inline]
+                fn output_fields(&self) -> &[(&'static str, Option<&'static str>)] {
+                    <#output_struct as dars::Model>::fields()
+                }
+
+                #[inline(always)]
+                fn output_schema(&self) -> &dars::schemars::Schema {
+                    &self.output_schema
                 }
             }
         };

@@ -8,6 +8,9 @@ pub use dars_macros::*;
 mod signature;
 pub use signature::*;
 
+pub mod model;
+pub use model::*;
+
 mod module;
 pub use module::*;
 
