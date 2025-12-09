@@ -21,6 +21,9 @@ struct Plan {
     #[input]
     question: String,
 
+    #[input]
+    previous_steps: Vec<usize>,
+
     #[output(desc = "Plan steps to answer the question")]
     steps: Vec<Step>,
 }
@@ -44,6 +47,7 @@ async fn main() {
         "plan: {:?}",
         plan.call(PlanInput {
             question: "Hi how are you?".to_string(),
+            previous_steps: vec![1, 2, 3],
         })
         .await
         .unwrap()

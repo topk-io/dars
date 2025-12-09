@@ -143,7 +143,7 @@ impl ToTokens for Signature {
                     let desc = LitStr::new(desc, Span::call_site());
                     quote! {
                         #[field(desc = #desc)]
-                        pub #name: #ty,
+                        pub #name: #ty
                     }
                 }
                 None => {
@@ -164,7 +164,7 @@ impl ToTokens for Signature {
                     let desc = LitStr::new(desc, Span::call_site());
                     quote! {
                         #[field(desc = #desc)]
-                        pub #name: #ty,
+                        pub #name: #ty
                     }
                 }
                 None => {
@@ -179,13 +179,13 @@ impl ToTokens for Signature {
             // Input model struct
             #[Model]
             #vis struct #input_struct {
-                #(#inputs)*
+                #(#inputs,)*
             }
 
             // Output model struct
             #[Model]
             #vis struct #output_struct {
-                #(#outputs)*
+                #(#outputs,)*
             }
 
             // Base signature struct

@@ -68,7 +68,7 @@ impl ToTokens for Model {
             let name = &field.name;
             let ty = &field.ty;
             quote! {
-                pub #name: #ty,
+                pub #name: #ty
             }
         });
         let fields_names = self.fields.iter().map(|field| {
@@ -96,7 +96,7 @@ impl ToTokens for Model {
         let expanded = quote! {
             #[derive(Debug, dars::serde::Serialize, dars::serde::Deserialize, dars::schemars::JsonSchema)]
             #vis struct #name {
-                #(#fields)*
+                #(#fields,)*
             }
 
             impl dars::Model for #name {
