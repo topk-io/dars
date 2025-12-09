@@ -3,6 +3,7 @@ use quote::{ToTokens, quote};
 use syn::{
     Field, Ident, Token, Type, braced,
     parse::{Parse, ParseStream},
+    spanned::Spanned,
 };
 
 use crate::util::parse_desc;
@@ -39,9 +40,12 @@ impl Parse for Model {
             for attr in &field.attrs {
                 if attr.path().is_ident("field") {
                     desc = parse_desc(attr)?;
-                    println!("field: {name:?}, desc: {:?}", desc);
                     break;
                 }
+                return Err(syn::Error::new(
+                    attr.span(),
+                    format!("Unknown attribute on field {name}"),
+                ));
             }
 
             fields.push(ModelField {

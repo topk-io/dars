@@ -11,8 +11,9 @@ struct Step {
 }
 
 #[Signature("This is my instruction")]
+// #[Signature]
 struct Plan {
-    #[input(desc = "The question to answer")]
+    #[input]
     question: String,
 
     #[output(desc = "Plan steps to answer the question")]
@@ -26,7 +27,11 @@ async fn main() {
     let output_schema = schema_for!(PlanOutput);
     println!("{}", serde_json::to_string_pretty(&output_schema).unwrap());
 
-    let plan = Predict::new(Plan::new());
+    let sig = Plan::new();
+    println!("plan: {:?}", sig.input_schema());
+    println!("plan: {:?}", sig.output_schema());
+
+    let plan = Predict::new(sig);
     println!(
         "plan: {:?}",
         plan.call(PlanInput {

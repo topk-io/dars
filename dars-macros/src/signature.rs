@@ -69,7 +69,6 @@ impl Parse for Signature {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let _ = input.parse::<Token![struct]>()?;
         let name: Ident = input.parse()?;
-        println!("name: {:?}", name);
 
         // Extract the content of the struct
         let content;
@@ -122,8 +121,12 @@ impl Parse for Signature {
 
 impl ToTokens for Signature {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let instruction = self.instruction.as_ref();
-        println!("instruction: {:?}", instruction);
+        let instruction = self
+            .instruction
+            .as_ref()
+            .map(|s| s.to_string())
+            .unwrap_or_default();
+
         let name = format_ident!("{}", self.name);
 
         let input_struct = format_ident!("{}Input", self.name);
@@ -151,22 +154,26 @@ impl ToTokens for Signature {
                 #(#inputs)*
             }
 
+            impl dars::SignatureInput for #input_struct {}
+
             // Output struct
             #[derive(Debug, dars::serde::Deserialize, dars::schemars::JsonSchema)]
             struct #output_struct {
                 #(#outputs)*
             }
 
+            impl dars::SignatureOutput for #output_struct {}
+
             // Base signature struct
             #[derive(Debug)]
             struct #name {
-                instruction: Option<String>,
+                instruction: String,
             }
 
             impl #name {
                 pub fn new() -> Self {
                     Self {
-                        instruction: Some("foo".into())
+                        instruction: #instruction.into(),
                     }
                 }
             }
@@ -174,6 +181,21 @@ impl ToTokens for Signature {
             impl dars::Signature for #name {
                 type Input = #input_struct;
                 type Output = #output_struct;
+
+                #[inline(always)]
+                fn instruction(&self) -> &str {
+                    &self.instruction
+                }
+
+                #[inline(always)]
+                fn input_schema(&self) -> dars::schemars::Schema {
+                    dars::schemars::schema_for!(#input_struct)
+                }
+
+                #[inline(always)]
+                fn output_schema(&self) -> dars::schemars::Schema {
+                    dars::schemars::schema_for!(#output_struct)
+                }
             }
         };
         tokens.extend(expanded);
