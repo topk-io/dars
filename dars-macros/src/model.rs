@@ -77,12 +77,18 @@ impl ToTokens for Model {
                 Some(desc) => {
                     let desc = LitStr::new(desc, Span::call_site());
                     quote! {
-                        (#name, Some(#desc))
+                        dars::Field {
+                            name: #name,
+                            description: Some(#desc),
+                        }
                     }
                 }
                 None => {
                     quote! {
-                        (#name, None)
+                        dars::Field {
+                            name: #name,
+                            description: None,
+                        }
                     }
                 }
             }
@@ -95,7 +101,7 @@ impl ToTokens for Model {
 
             impl dars::Model for #name {
                 #[inline]
-                fn fields() -> &'static [(&'static str, Option<&'static str>)] {
+                fn fields() -> &'static [dars::Field] {
                     &[#(#fields_names,)*]
                 }
             }

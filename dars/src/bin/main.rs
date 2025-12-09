@@ -1,4 +1,10 @@
-use dars::{Model, Module, Predict, Signature};
+use std::sync::Arc;
+
+use async_openai::config::OpenAIConfig;
+use dars::{
+    Model, Module, Predict, Signature,
+    openai::{ModelConfig, OpenAILM},
+};
 
 #[Model]
 struct Step {
@@ -27,13 +33,12 @@ async fn main() {
     println!("input fields: {:?}", sig.input_fields());
     println!("output fields: {:?}", sig.output_fields());
 
-    let step = Step {
-        id: 1,
-        dependencies: vec![],
-    };
-    println!("fields: {:?}", Step::fields());
+    let lm = Arc::new(OpenAILM::new(
+        OpenAIConfig::new(),
+        ModelConfig::model("gpt-41-mini"),
+    ));
 
-    let plan = Predict::new(sig);
+    let plan = Predict::new(lm, sig);
 
     println!(
         "plan: {:?}",

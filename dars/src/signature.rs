@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::model::Model;
+use crate::{Field, model::Model};
 
 pub trait Signature
 where
@@ -13,13 +13,13 @@ where
     fn instruction(&self) -> &str;
 
     /// Returns input fields for the signature.
-    fn input_fields(&self) -> &[(&'static str, Option<&'static str>)];
+    fn input_fields(&self) -> &[Field];
 
     /// Returns the input schema for the signature.
     fn input_schema(&self) -> &schemars::Schema;
 
     /// Returns output fields for the signature.
-    fn output_fields(&self) -> &[(&'static str, Option<&'static str>)];
+    fn output_fields(&self) -> &[Field];
 
     /// Returns the output schema for the signature.
     fn output_schema(&self) -> &schemars::Schema;

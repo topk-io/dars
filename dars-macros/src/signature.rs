@@ -216,7 +216,7 @@ impl ToTokens for Signature {
                 }
 
                 #[inline]
-                fn input_fields(&self) -> &[(&'static str, Option<&'static str>)] {
+                fn input_fields(&self) -> &[dars::Field] {
                     <#input_struct as dars::Model>::fields()
                 }
 
@@ -226,7 +226,7 @@ impl ToTokens for Signature {
                 }
 
                 #[inline]
-                fn output_fields(&self) -> &[(&'static str, Option<&'static str>)] {
+                fn output_fields(&self) -> &[dars::Field] {
                     <#output_struct as dars::Model>::fields()
                 }
 
