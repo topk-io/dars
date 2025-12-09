@@ -10,3 +10,6 @@ pub use signature::*;
 
 mod module;
 pub use module::*;
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {}

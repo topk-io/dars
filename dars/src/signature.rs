@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-pub trait Signature: Sized + Debug {
-    type Input: std::fmt::Debug;
-    type Output;
+pub trait Signature: Sized + Debug + Send + Sync + 'static {
+    type Input: Debug + Send + Sync + 'static;
+    type Output: Debug + Send + Sync + 'static;
 }

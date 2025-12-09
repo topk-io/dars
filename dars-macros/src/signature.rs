@@ -1,10 +1,12 @@
 use proc_macro2::{Span, TokenStream};
 use quote::{ToTokens, format_ident, quote};
 use syn::{
-    Attribute, Expr, Field, Ident, Lit, MetaNameValue, Token, Type, braced,
+    Field, Ident, Lit, Token, Type, braced,
     parse::{Parse, ParseStream},
     spanned::Spanned,
 };
+
+use crate::util::parse_desc;
 
 struct InputField {
     name: String,
@@ -175,35 +177,5 @@ impl ToTokens for Signature {
             }
         };
         tokens.extend(expanded);
-    }
-}
-
-fn parse_desc(attr: &Attribute) -> syn::Result<Option<String>> {
-    let args = attr.parse_args::<MetaNameValue>()?;
-    match args.path.get_ident() {
-        Some(ident) => {
-            if ident == "desc" {
-                match args.value {
-                    Expr::Lit(lit) => match lit.lit {
-                        Lit::Str(str) => Ok(Some(str.value())),
-                        _ => return Err(syn::Error::new(lit.span(), "Expected string literal")),
-                    },
-                    _ => {
-                        return Err(syn::Error::new(
-                            args.value.span(),
-                            "Expected string literal",
-                        ));
-                    }
-                }
-            } else {
-                return Err(syn::Error::new(
-                    attr.span(),
-                    format!("Invalid parameter: {ident}"),
-                ));
-            }
-        }
-        None => {
-            return Err(syn::Error::new(attr.span(), "Missing attribute name"));
-        }
     }
 }

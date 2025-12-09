@@ -3,10 +3,10 @@ use schemars::schema_for;
 
 #[Model]
 struct Step {
-    #[desc("The step id")]
+    #[field(desc = "foo")]
     id: u16,
 
-    #[desc("The step dependencies")]
+    #[field(desc = "The step dependencies")]
     dependencies: Vec<u16>,
 }
 
@@ -19,7 +19,8 @@ struct Plan {
     steps: Vec<Step>,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     println!("Hello, world!");
 
     let output_schema = schema_for!(PlanOutput);
@@ -31,5 +32,7 @@ fn main() {
         plan.call(PlanInput {
             question: "Hi how are you?".to_string(),
         })
+        .await
+        .unwrap()
     );
 }

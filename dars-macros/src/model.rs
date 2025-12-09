@@ -1,10 +1,11 @@
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use syn::{
-    Attribute, Expr, Field, Ident, Lit, Token, Type, braced,
+    Field, Ident, Token, Type, braced,
     parse::{Parse, ParseStream},
-    spanned::Spanned,
 };
+
+use crate::util::parse_desc;
 
 struct ModelField {
     name: Ident,
@@ -26,6 +27,7 @@ impl Parse for Model {
         let content;
         braced!(content in input);
 
+        // Parse fields
         let raw_fields = content.parse_terminated(Field::parse_named, Token![,])?;
         let mut fields = Vec::with_capacity(raw_fields.len());
         for field in raw_fields {
@@ -35,8 +37,9 @@ impl Parse for Model {
 
             let mut desc = None;
             for attr in &field.attrs {
-                if attr.path().is_ident("desc") {
+                if attr.path().is_ident("field") {
                     desc = parse_desc(attr)?;
+                    println!("field: {name:?}, desc: {:?}", desc);
                     break;
                 }
             }
@@ -69,22 +72,5 @@ impl ToTokens for Model {
             }
         };
         tokens.extend(expanded);
-    }
-}
-
-fn parse_desc(attr: &Attribute) -> syn::Result<Option<String>> {
-    match &attr.meta {
-        syn::Meta::NameValue(nv) => {
-            if let Expr::Lit(expr_lit) = &nv.value {
-                if let Lit::Str(lit_str) = &expr_lit.lit {
-                    return Ok(Some(lit_str.value()));
-                }
-            }
-            Err(syn::Error::new(nv.value.span(), "Expected string literal"))
-        }
-        _ => Err(syn::Error::new(
-            attr.span(),
-            "Expected name-value attribute, e.g. #[desc = \"...\"]",
-        )),
     }
 }

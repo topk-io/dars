@@ -4,6 +4,7 @@ use syn::parse_macro_input;
 
 mod model;
 mod signature;
+mod util;
 
 #[allow(non_snake_case)]
 #[proc_macro_attribute]
