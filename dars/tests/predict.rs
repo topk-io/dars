@@ -4,10 +4,8 @@ use async_trait::async_trait;
 use schemars::Schema;
 use serde_json::json;
 
-use dars::{
-    Error, Module, Predict, Signature,
-    lm::{LM, Message},
-};
+use dars::lm::{LM, Message};
+use dars::*;
 
 struct FixedLM {
     resp: serde_json::Value,

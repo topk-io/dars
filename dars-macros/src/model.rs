@@ -15,9 +15,19 @@ struct ModelField {
 }
 
 pub struct Model {
+    description: Option<String>,
     vis: Visibility,
     name: Ident,
     fields: Vec<ModelField>,
+}
+
+impl Model {
+    pub(crate) fn with_args(self, description: impl Into<Option<String>>) -> Self {
+        Self {
+            description: description.into(),
+            ..self
+        }
+    }
 }
 
 impl Parse for Model {
@@ -56,7 +66,12 @@ impl Parse for Model {
                 desc,
             });
         }
-        Ok(Model { vis, name, fields })
+        Ok(Model {
+            vis,
+            name,
+            fields,
+            description: None,
+        })
     }
 }
 
@@ -64,18 +79,33 @@ impl ToTokens for Model {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let vis = &self.vis;
         let name = &self.name;
+        let description = self
+            .description
+            .as_ref()
+            .map(|d| d.as_str().trim())
+            .unwrap_or_default();
         let fields = self.fields.iter().map(|field| {
             let name = &field.name;
             let ty = &field.ty;
-            quote! {
-                pub #name: #ty
+            match &field.desc {
+                Some(desc) => {
+                    quote! {
+                        #[schemars(description = #desc.trim())]
+                        pub #name: #ty
+                    }
+                }
+                None => {
+                    quote! {
+                        pub #name: #ty
+                    }
+                }
             }
         });
         let fields_names = self.fields.iter().map(|field| {
             let name = LitStr::new(&field.name.to_string(), Span::call_site());
             match &field.desc {
                 Some(desc) => {
-                    let desc = LitStr::new(desc, Span::call_site());
+                    let desc = LitStr::new(desc.trim(), Span::call_site());
                     quote! {
                         dars::Field {
                             name: #name,
@@ -95,6 +125,7 @@ impl ToTokens for Model {
         });
         let expanded = quote! {
             #[derive(Debug, dars::serde::Serialize, dars::serde::Deserialize, dars::schemars::JsonSchema)]
+            #[schemars(description = #description)]
             #vis struct #name {
                 #(#fields,)*
             }

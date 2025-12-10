@@ -10,17 +10,17 @@ openai = ["async-openai"]
 
 [dependencies]
 dars-macros = { path = "../dars-macros" }
-async-trait = { version = "0.1.89" }
+async-trait = { version = "^0.1.89" }
 thiserror = { version = "2.0.17" }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = { version = "1.0" }
-schemars = { version = "1.1" }
+serde = { version = "^1.0", features = ["derive"] }
+serde_json = { version = "^1.0" }
+schemars = { version = "^1.1" }
 # openai feature
-async-openai = { version = "0.31.1", optional = true, features = [
+async-openai = { version = "^0.31.1", optional = true, features = [
     "_api",
     "chat-completion",
     "chat-completion-types",
 ] }
 
 [dev-dependencies]
-tokio = { version = "1.48.0", features = ["rt", "test-util"] }
+tokio = { version = "^1.48.0", features = ["rt", "test-util"] }

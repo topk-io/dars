@@ -1,7 +1,7 @@
 use proc_macro2::{Span, TokenStream};
 use quote::{ToTokens, format_ident, quote};
 use syn::{
-    Field, Ident, Lit, LitStr, Token, Type, Visibility, braced,
+    Field, Ident, LitStr, Token, Type, Visibility, braced,
     parse::{Parse, ParseStream},
     spanned::Spanned,
 };
@@ -20,35 +20,6 @@ struct OutputField {
     desc: Option<String>,
 }
 
-#[derive(Debug)]
-pub struct Instruction {
-    instruction: Option<String>,
-}
-
-impl Parse for Instruction {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let mut instruction = String::new();
-        while let Ok(lit) = input.parse::<Lit>() {
-            match lit {
-                Lit::Str(str) => {
-                    for line in str.value().lines() {
-                        let line = line.trim();
-                        if !line.is_empty() {
-                            instruction.push_str(line);
-                            instruction.push(' ');
-                        }
-                    }
-                }
-                _ => return Err(syn::Error::new(lit.span(), "Expected string literal")),
-            }
-        }
-
-        Ok(Instruction {
-            instruction: (!instruction.is_empty()).then_some(instruction),
-        })
-    }
-}
-
 pub struct Signature {
     vis: Visibility,
     name: Ident,
@@ -58,9 +29,9 @@ pub struct Signature {
 }
 
 impl Signature {
-    pub(crate) fn with_instruction(self, instruction: Instruction) -> Self {
+    pub(crate) fn with_instruction(self, instruction: impl Into<Option<String>>) -> Self {
         Self {
-            instruction: instruction.instruction,
+            instruction: instruction.into(),
             ..self
         }
     }
@@ -190,13 +161,13 @@ impl ToTokens for Signature {
 
         let expanded = quote! {
             // Input model struct
-            #[dars_macros::Model]
+            #[Model]
             #vis struct #input_struct {
                 #(#inputs,)*
             }
 
             // Output model struct
-            #[dars_macros::Model]
+            #[Model]
             #vis struct #output_struct {
                 #(#outputs,)*
             }
