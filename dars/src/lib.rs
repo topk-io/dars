@@ -14,11 +14,8 @@ pub use model::*;
 mod module;
 pub use module::*;
 
-mod lm;
-pub use lm::*;
-
-mod adapter;
-pub use adapter::*;
+pub mod adapter;
+pub mod lm;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Field {

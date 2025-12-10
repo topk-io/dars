@@ -2,7 +2,10 @@ use schemars::{Schema, schema_for};
 use serde_json::Value;
 
 use super::Adapter;
-use crate::{Error, Message, MessageContent, Signature};
+use crate::{
+    Error, Signature,
+    lm::{Message, MessageContent},
+};
 
 pub struct JsonAdapter<S: Signature> {
     signature: S,

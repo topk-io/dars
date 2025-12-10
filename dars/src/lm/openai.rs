@@ -10,7 +10,10 @@ use async_openai::{
 use async_trait::async_trait;
 use schemars::Schema;
 
-use crate::{Error, LM, Message, MessageContent};
+use crate::{
+    Error,
+    lm::{LM, Message, MessageContent},
+};
 
 #[derive(Debug, Default)]
 pub struct ModelConfig {

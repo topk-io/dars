@@ -3,7 +3,8 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use super::Module;
-use crate::{Adapter, Error, LM, Signature, json::JsonAdapter};
+use crate::adapter::{Adapter, json::JsonAdapter};
+use crate::{Error, Signature, lm::LM};
 
 pub struct Predict<S: Signature> {
     lm: Arc<dyn LM>,
