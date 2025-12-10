@@ -1,5 +1,6 @@
 // Re-export dependencies
 pub use schemars;
+use schemars::Schema;
 pub use serde;
 
 // Export macros
@@ -16,6 +17,9 @@ pub use module::*;
 
 mod lm;
 pub use lm::*;
+
+mod adapter;
+pub use adapter::*;
 
 #[derive(Debug, Clone)]
 pub struct Field {

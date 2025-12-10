@@ -5,6 +5,7 @@ use dars::{
     Model, Module, Predict, Signature,
     openai::{ModelConfig, OpenAILM},
 };
+use schemars::schema_for;
 
 #[Model]
 struct Step {
@@ -13,6 +14,12 @@ struct Step {
 
     #[field(desc = "The step dependencies")]
     dependencies: Vec<u16>,
+}
+
+#[Model]
+struct Structured {
+    #[field(desc = "The structured field")]
+    field: String,
 }
 
 #[Signature("This is my instruction")]
@@ -26,15 +33,23 @@ struct Plan {
 
     #[output(desc = "Plan steps to answer the question")]
     steps: Vec<Step>,
+
+    #[output(desc = "object")]
+    struc: Structured,
 }
 
 #[tokio::main]
 async fn main() {
     let sig = Plan::new();
-    println!("input: {:?}", sig.input_schema());
-    println!("output: {:?}", sig.output_schema());
-    println!("input fields: {:?}", sig.input_fields());
-    println!("output fields: {:?}", sig.output_fields());
+    // println!("input: {:?}", sig.input_schema());
+    // println!("output: {:?}", sig.output_schema());
+    // println!("input fields: {:?}", sig.input_fields());
+    // println!("output fields: {:?}", sig.output_fields());
+
+    println!(
+        "{}",
+        serde_json::to_string(&schema_for!(Vec<Structured>)).unwrap()
+    );
 
     let lm = Arc::new(OpenAILM::new(
         OpenAIConfig::new(),

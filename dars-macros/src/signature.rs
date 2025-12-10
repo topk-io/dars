@@ -175,6 +175,19 @@ impl ToTokens for Signature {
             }
         });
 
+        let fields = self
+            .inputs
+            .iter()
+            .map(|f| (&f.name, &f.ty))
+            .chain(self.outputs.iter().map(|f| (&f.name, &f.ty)))
+            .map(|(name, ty)| {
+                let name = name.as_str();
+                let ty = ty.clone();
+                quote! {
+                    (#name.to_string(), dars::schemars::schema_for!(#ty))
+                }
+            });
+
         let expanded = quote! {
             // Input model struct
             #[Model]
@@ -192,16 +205,16 @@ impl ToTokens for Signature {
             #[derive(Debug)]
             #vis struct #name {
                 instruction: String,
-                input_schema: dars::schemars::Schema,
-                output_schema: dars::schemars::Schema,
+                fields: std::collections::HashMap<String, dars::schemars::Schema>,
             }
 
             impl #name {
                 #vis fn new() -> Self {
                     Self {
                         instruction: #instruction.into(),
-                        input_schema: dars::schemars::schema_for!(#input_struct),
-                        output_schema: dars::schemars::schema_for!(#output_struct),
+                        fields: std::collections::HashMap::from_iter([
+                            #(#fields,)*
+                        ]),
                     }
                 }
             }
@@ -220,19 +233,14 @@ impl ToTokens for Signature {
                     <#input_struct as dars::Model>::fields()
                 }
 
-                #[inline(always)]
-                fn input_schema(&self) -> &dars::schemars::Schema {
-                    &self.input_schema
-                }
-
                 #[inline]
                 fn output_fields(&self) -> &[dars::Field] {
                     <#output_struct as dars::Model>::fields()
                 }
 
-                #[inline(always)]
-                fn output_schema(&self) -> &dars::schemars::Schema {
-                    &self.output_schema
+                #[inline]
+                fn field(&self, name: &str) -> Option<&dars::schemars::Schema> {
+                    self.fields.get(name)
                 }
             }
         };

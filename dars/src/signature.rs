@@ -15,12 +15,9 @@ where
     /// Returns input fields for the signature.
     fn input_fields(&self) -> &[Field];
 
-    /// Returns the input schema for the signature.
-    fn input_schema(&self) -> &schemars::Schema;
-
     /// Returns output fields for the signature.
     fn output_fields(&self) -> &[Field];
 
-    /// Returns the output schema for the signature.
-    fn output_schema(&self) -> &schemars::Schema;
+    /// Returns the [`Schema`](schemars::Schema) for a field by name.
+    fn field(&self, name: &str) -> Option<&schemars::Schema>;
 }
