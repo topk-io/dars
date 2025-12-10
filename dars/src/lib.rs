@@ -1,6 +1,5 @@
 // Re-export dependencies
 pub use schemars;
-use schemars::Schema;
 pub use serde;
 
 // Export macros
@@ -21,7 +20,7 @@ pub use lm::*;
 mod adapter;
 pub use adapter::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Field {
     pub name: &'static str,
     pub description: Option<&'static str>,

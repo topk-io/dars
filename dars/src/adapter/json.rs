@@ -8,6 +8,17 @@ pub struct JsonAdapter<S: Signature> {
     signature: S,
 }
 
+impl<S: Signature> Adapter<S> for JsonAdapter<S> {
+    fn format(&self, input: S::Input) -> Result<(Vec<Message>, Option<Schema>), Error> {
+        let messages = vec![self.format_system_message(), self.format_input(input)?];
+        Ok((messages, Some(schema_for!(S::Output))))
+    }
+
+    fn parse(&self, output: String) -> Result<S::Output, Error> {
+        Ok(serde_json::from_str(&output)?)
+    }
+}
+
 impl<S: Signature> JsonAdapter<S> {
     pub fn new(signature: S) -> Self {
         Self { signature }
@@ -54,7 +65,7 @@ impl<S: Signature> JsonAdapter<S> {
         for (i, f) in self.signature.output_fields().iter().enumerate() {
             buf += &format!("\t\"{}\": \"{{{}}}", f.name, f.name);
             if let Some(schema) = self.signature.field(f.name) {
-                buf += "\t# note: the value you produce must adhere to the JSON schema: ";
+                buf += " # note: the value you produce must adhere to the JSON schema: ";
                 buf += &serde_json::to_string(schema).unwrap();
             }
             buf += "\"";
@@ -63,19 +74,27 @@ impl<S: Signature> JsonAdapter<S> {
             }
         }
         buf += "\n}";
+
+        // Instruction
         buf += "\nIn adhering to this structure, your objective is:\n";
         if self.signature.instruction().is_empty() {
             buf += "Given the fields ";
-            for f in self.signature.input_fields() {
-                buf += &format!("`{}`, ", f.name);
+            for (i, f) in self.signature.input_fields().iter().enumerate() {
+                buf += &format!("`{}`", f.name);
+                if i + 1 < self.signature.input_fields().len() {
+                    buf += ", ";
+                }
             }
-            buf += "produce the fields ";
-            for f in self.signature.output_fields() {
-                buf += &format!("`{}`, ", f.name);
+            buf += ", produce the fields ";
+            for (i, f) in self.signature.output_fields().iter().enumerate() {
+                buf += &format!("`{}`", f.name);
+                if i + 1 < self.signature.output_fields().len() {
+                    buf += ", ";
+                }
             }
             buf += ".";
         } else {
-            buf += &self.signature.instruction();
+            buf += &self.signature.instruction().trim();
         }
 
         Message::System { instruction: buf }
@@ -85,10 +104,13 @@ impl<S: Signature> JsonAdapter<S> {
         match serde_json::to_value(input)? {
             Value::Object(kv) => {
                 let mut buf = String::new();
-                for f in self.signature.input_fields() {
+                for (i, f) in self.signature.input_fields().iter().enumerate() {
                     match kv.get(f.name) {
-                        Some(value) => buf += &format!("[[ ## {} ## ]]\n{}\n\n", f.name, value),
-                        None => buf += &format!("[[ ## {} ## ]]\n\n", f.name),
+                        Some(value) => buf += &format!("[[ ## {} ## ]]\n{}", f.name, value),
+                        None => buf += &format!("[[ ## {} ## ]]", f.name),
+                    }
+                    if i + 1 < self.signature.input_fields().len() {
+                        buf += "\n\n";
                     }
                 }
                 Ok(Message::User {
@@ -97,17 +119,6 @@ impl<S: Signature> JsonAdapter<S> {
             }
             _ => unreachable!(),
         }
-    }
-}
-
-impl<S: Signature> Adapter<S> for JsonAdapter<S> {
-    fn format(&self, input: S::Input) -> Result<(Vec<Message>, Option<Schema>), Error> {
-        let messages = vec![self.format_system_message(), self.format_input(input)?];
-        Ok((messages, Some(schema_for!(S::Output))))
-    }
-
-    fn parse(&self, output: String) -> Result<S::Output, Error> {
-        Ok(serde_json::from_str(&output)?)
     }
 }
 

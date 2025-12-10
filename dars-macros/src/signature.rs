@@ -127,7 +127,7 @@ impl ToTokens for Signature {
         let instruction = self
             .instruction
             .as_ref()
-            .map(|s| s.to_string())
+            .map(|s| s.trim().to_string())
             .unwrap_or_default();
 
         let name = &self.name;
@@ -190,13 +190,13 @@ impl ToTokens for Signature {
 
         let expanded = quote! {
             // Input model struct
-            #[Model]
+            #[dars_macros::Model]
             #vis struct #input_struct {
                 #(#inputs,)*
             }
 
             // Output model struct
-            #[Model]
+            #[dars_macros::Model]
             #vis struct #output_struct {
                 #(#outputs,)*
             }

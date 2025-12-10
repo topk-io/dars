@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde_json::Value;
 
 use super::Module;
-use crate::{Adapter, Error, LM, Message, MessageContent, Signature, json::JsonAdapter};
+use crate::{Adapter, Error, LM, Signature, json::JsonAdapter};
 
 pub struct Predict<S: Signature> {
     lm: Arc<dyn LM>,
@@ -30,14 +29,13 @@ impl<S: Signature> Module for Predict<S> {
     type Output = <S as Signature>::Output;
 
     async fn call(&self, input: Self::Input) -> Result<Self::Output, Error> {
+        // Format input
         let (messages, schema) = self.adapter.format(input)?;
-        for m in &messages {
-            println!("{}", m);
-        }
 
         // Call LM with the json schema for the output
         let resp = self.lm.call(messages, schema).await?;
 
+        // Parse output
         self.adapter.parse(resp)
     }
 }
