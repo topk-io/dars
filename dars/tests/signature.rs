@@ -1,4 +1,5 @@
 use dars::{Field, Model, Signature};
+use schemars::schema_for;
 
 #[test]
 fn test_empty_signature() {
@@ -22,24 +23,24 @@ fn test_signature_with_instruction() {
     assert_eq!(sig.output_fields(), &[]);
 }
 
+#[Signature("Signature instruction")]
+struct Sig {
+    #[input]
+    input: String,
+
+    #[input(desc = "Input description")]
+    input_with_description: Vec<usize>,
+
+    #[output]
+    output: String,
+
+    #[output(desc = "Output description")]
+    output_with_description: Vec<String>,
+}
+
 #[test]
 fn test_signature_with_input_and_output() {
-    #[Signature("Signature instruction")]
-    struct SignatureWithInputAndOutput {
-        #[input]
-        input: String,
-
-        #[input(desc = "Input description")]
-        input_with_description: String,
-
-        #[output]
-        output: String,
-
-        #[output(desc = "Output description")]
-        output_with_description: String,
-    }
-
-    let sig = SignatureWithInputAndOutput::new();
+    let sig = Sig::new();
     assert_eq!(sig.instruction(), "Signature instruction");
     assert_eq!(
         sig.input_fields(),
@@ -70,22 +71,22 @@ fn test_signature_with_input_and_output() {
 }
 
 #[test]
+fn test_signature_fields() {
+    let sig = Sig::new();
+    assert_eq!(sig.field("input"), Some(&schema_for!(String)));
+    assert_eq!(
+        sig.field("input_with_description"),
+        Some(&schema_for!(Vec<usize>))
+    );
+    assert_eq!(sig.field("output"), Some(&schema_for!(String)));
+    assert_eq!(
+        sig.field("output_with_description"),
+        Some(&schema_for!(Vec<String>))
+    );
+}
+
+#[test]
 fn test_signature_generates_input_output_models() {
-    #[Signature]
-    struct Sig {
-        #[input]
-        input: String,
-
-        #[input(desc = "Input description")]
-        input_with_description: String,
-
-        #[output]
-        output: String,
-
-        #[output(desc = "Output description")]
-        output_with_description: String,
-    }
-
     assert_eq!(
         SigInput::fields(),
         &[
