@@ -124,7 +124,7 @@ impl ToTokens for Model {
             }
         });
         let expanded = quote! {
-            #[derive(Debug, dars::serde::Serialize, dars::serde::Deserialize, dars::schemars::JsonSchema)]
+            #[derive(Debug, Clone, dars::serde::Serialize, dars::serde::Deserialize, dars::schemars::JsonSchema)]
             #[schemars(description = #description)]
             #vis struct #name {
                 #(#fields,)*
