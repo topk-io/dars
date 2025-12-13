@@ -117,7 +117,7 @@ impl<S: Signature> JsonAdapter<S> {
                     }
                 }
                 Ok(Message::User {
-                    content: MessageContent::Text { text: buf },
+                    content: vec![MessageContent::Text { text: buf }],
                 })
             }
             _ => unreachable!(),

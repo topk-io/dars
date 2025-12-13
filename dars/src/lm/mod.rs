@@ -20,7 +20,7 @@ where
 #[derive(Debug, Clone)]
 pub enum Message {
     System { instruction: String },
-    User { content: MessageContent },
+    User { content: Vec<MessageContent> },
     Assistant { content: MessageContent },
 }
 
@@ -28,7 +28,13 @@ impl Display for Message {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Message::System { instruction } => write!(f, "System:\n{}", instruction),
-            Message::User { content } => write!(f, "User:\n{}", content),
+            Message::User { content } => {
+                write!(f, "User:\n")?;
+                for c in content.iter() {
+                    write!(f, "{}\n", c)?;
+                }
+                Ok(())
+            }
             Message::Assistant { content } => write!(f, "Assistant:\n{}", content),
         }
     }

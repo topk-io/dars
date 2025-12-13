@@ -4,7 +4,8 @@ use async_openai::{
     types::chat::{
         ChatCompletionRequestMessage, ChatCompletionRequestUserMessage,
         ChatCompletionRequestUserMessageContent, ChatCompletionRequestUserMessageContentPart,
-        CreateChatCompletionRequest, ImageUrl, ResponseFormat, ResponseFormatJsonSchema,
+        CreateChatCompletionRequest, ImageDetail, ImageUrl, ResponseFormat,
+        ResponseFormatJsonSchema,
     },
 };
 use async_trait::async_trait;
@@ -76,10 +77,31 @@ impl TryFrom<Message> for ChatCompletionRequestMessage {
             Message::System { instruction } => {
                 ChatCompletionRequestMessage::System(instruction.into())
             }
-            Message::User { content } => match content {
-                MessageContent::Text { text } => ChatCompletionRequestMessage::User(text.into()),
-                MessageContent::Image { url } => image_message(url),
-            },
+            Message::User { content } => {
+                let mut parts = Vec::with_capacity(content.len());
+                for msg in content {
+                    let part = match msg {
+                        MessageContent::Text { text } => {
+                            ChatCompletionRequestUserMessageContentPart::Text(text.into())
+                        }
+                        MessageContent::Image { url } => {
+                            ChatCompletionRequestUserMessageContentPart::ImageUrl(
+                                ImageUrl {
+                                    url,
+                                    detail: Some(ImageDetail::Auto),
+                                }
+                                .into(),
+                            )
+                        }
+                    };
+
+                    parts.push(part);
+                }
+                ChatCompletionRequestMessage::User(ChatCompletionRequestUserMessage {
+                    name: None,
+                    content: ChatCompletionRequestUserMessageContent::Array(parts),
+                })
+            }
             Message::Assistant { content } => match content {
                 MessageContent::Text { text } => {
                     ChatCompletionRequestMessage::Assistant(text.into())
