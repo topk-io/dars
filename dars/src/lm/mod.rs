@@ -40,7 +40,7 @@ impl Display for Message {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum MessageContent {
     Text { text: String },
     Image { url: String },

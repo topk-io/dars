@@ -14,6 +14,9 @@ pub use model::*;
 mod module;
 pub use module::*;
 
+mod image;
+pub use image::Image;
+
 pub mod adapter;
 pub mod lm;
 

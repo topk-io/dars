@@ -1,3 +1,4 @@
+use regex::Regex;
 use schemars::{Schema, schema_for};
 use serde_json::Value;
 
@@ -108,21 +109,64 @@ impl<S: Signature> JsonAdapter<S> {
             Value::Object(kv) => {
                 let mut buf = String::new();
                 for (i, f) in self.signature.input_fields().iter().enumerate() {
-                    match kv.get(f.name) {
-                        Some(value) => buf += &format!("[[ ## {} ## ]]\n{}", f.name, value),
-                        None => buf += &format!("[[ ## {} ## ]]", f.name),
+                    // Header
+                    buf.push_str("[[ ## ");
+                    buf.push_str(f.name);
+                    buf.push_str(" ## ]]");
+                    // Value
+                    if let Some(value) = kv.get(f.name) {
+                        buf.push('\n');
+                        buf.push_str(&value.to_string());
                     }
+                    // Separator
                     if i + 1 < self.signature.input_fields().len() {
                         buf += "\n\n";
                     }
                 }
+
                 Ok(Message::User {
-                    content: vec![MessageContent::Text { text: buf }],
+                    content: parse_content(buf),
                 })
             }
             _ => unreachable!(),
         }
     }
+}
+
+fn parse_content(buf: String) -> Vec<MessageContent> {
+    let re = Regex::new(r"<dars-img>(.*?)</dars-img>").unwrap();
+
+    // Find image tags in the serialized input
+    let mut img_pos = vec![];
+    for m in re.find_iter(&buf) {
+        img_pos.push((m.start(), m.end()));
+    }
+
+    if img_pos.is_empty() {
+        // No images found, just return the text
+        return vec![MessageContent::Text { text: buf }];
+    }
+
+    // Split text into text and images
+    let mut content = vec![];
+    let mut text_start = 0;
+    for (img_start, img_end) in img_pos {
+        if text_start < img_start {
+            content.push(MessageContent::Text {
+                text: buf[text_start..img_start].to_string(),
+            });
+        }
+        content.push(MessageContent::Image {
+            url: buf[(img_start.saturating_add(10))..(img_end.saturating_sub(11))].to_string(),
+        });
+        text_start = img_end;
+    }
+    if text_start < buf.len() {
+        content.push(MessageContent::Text {
+            text: buf[text_start..].to_string(),
+        });
+    }
+    content
 }
 
 fn fmt_type(ty: &Value, buf: &mut String) {
@@ -165,5 +209,55 @@ fn fmt_type(ty: &Value, buf: &mut String) {
     } else if let Some(vty) = ty.get("$ref") {
         let ty = vty.as_str().unwrap().split("/").last().unwrap();
         buf.push_str(ty);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_content() {
+        let content = parse_content(
+            "this is some<dars-img>https://example.com/image.png</dars-img> text with an image <dars-img>https://example.com/image2.png</dars-img><dars-img>https://example.com/image3.png</dars-img>and some more text".to_string()
+        );
+
+        assert_eq!(content.len(), 6);
+        assert_eq!(
+            content[0],
+            MessageContent::Text {
+                text: "this is some".to_string()
+            }
+        );
+        assert_eq!(
+            content[1],
+            MessageContent::Image {
+                url: "https://example.com/image.png".to_string()
+            }
+        );
+        assert_eq!(
+            content[2],
+            MessageContent::Text {
+                text: " text with an image ".to_string()
+            }
+        );
+        assert_eq!(
+            content[3],
+            MessageContent::Image {
+                url: "https://example.com/image2.png".to_string()
+            }
+        );
+        assert_eq!(
+            content[4],
+            MessageContent::Image {
+                url: "https://example.com/image3.png".to_string()
+            }
+        );
+        assert_eq!(
+            content[5],
+            MessageContent::Text {
+                text: "and some more text".to_string()
+            }
+        );
     }
 }
