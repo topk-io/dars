@@ -28,10 +28,16 @@ pub struct Field {
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("serde_json: {0}")]
+    #[error("serde: {0}")]
     SerdeJson(#[from] serde_json::Error),
 
     #[cfg(feature = "openai")]
     #[error("OpenAI: {0}")]
     OpenAI(#[from] async_openai::error::OpenAIError),
+
+    #[error("invalid argument: {0}")]
+    InvalidArgument(String),
+
+    #[error("model call failed: {0}")]
+    ModelCall(String),
 }
