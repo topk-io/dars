@@ -4,8 +4,8 @@ use async_trait::async_trait;
 use schemars::Schema;
 use serde_json::json;
 
-use dars::lm::{LM, Message};
-use dars::*;
+use da_rs::lm::{LM, Message};
+use da_rs::*;
 
 struct FixedLM {
     resp: serde_json::Value,

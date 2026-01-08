@@ -1,4 +1,4 @@
-use dars::{Field, Model, Signature};
+use da_rs::{Field, Model, Signature};
 use schemars::schema_for;
 
 #[test]

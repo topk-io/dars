@@ -107,7 +107,7 @@ impl ToTokens for Model {
                 Some(desc) => {
                     let desc = LitStr::new(desc.trim(), Span::call_site());
                     quote! {
-                        dars::Field {
+                        da_rs::Field {
                             name: #name,
                             description: Some(#desc),
                         }
@@ -115,7 +115,7 @@ impl ToTokens for Model {
                 }
                 None => {
                     quote! {
-                        dars::Field {
+                        da_rs::Field {
                             name: #name,
                             description: None,
                         }
@@ -124,15 +124,15 @@ impl ToTokens for Model {
             }
         });
         let expanded = quote! {
-            #[derive(Debug, Clone, dars::serde::Serialize, dars::serde::Deserialize, dars::schemars::JsonSchema)]
+            #[derive(Debug, Clone, da_rs::serde::Serialize, da_rs::serde::Deserialize, da_rs::schemars::JsonSchema)]
             #[schemars(description = #description)]
             #vis struct #name {
                 #(#fields,)*
             }
 
-            impl dars::Model for #name {
+            impl da_rs::Model for #name {
                 #[inline]
-                fn fields() -> &'static [dars::Field] {
+                fn fields() -> &'static [da_rs::Field] {
                     &[#(#fields_names,)*]
                 }
             }

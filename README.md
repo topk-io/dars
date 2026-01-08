@@ -9,8 +9,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_openai::config::OpenAIConfig;
-use dars::lm::openai::{ModelConfig, OpenAILM};
-use dars::*;
+use da_rs::lm::openai::{ModelConfig, OpenAILM};
+use da_rs::*;
 
 #[Signature("Extract structured information from text.")]
 struct ExtractInfo {

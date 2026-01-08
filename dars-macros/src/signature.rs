@@ -155,7 +155,7 @@ impl ToTokens for Signature {
                 let name = name.as_str();
                 let ty = ty.clone();
                 quote! {
-                    (#name.to_string(), dars::schemars::schema_for!(#ty))
+                    (#name.to_string(), da_rs::schemars::schema_for!(#ty))
                 }
             });
 
@@ -176,7 +176,7 @@ impl ToTokens for Signature {
             #[derive(Debug)]
             #vis struct #name {
                 instruction: String,
-                fields: std::collections::HashMap<String, dars::schemars::Schema>,
+                fields: std::collections::HashMap<String, da_rs::schemars::Schema>,
             }
 
             impl #name {
@@ -190,7 +190,7 @@ impl ToTokens for Signature {
                 }
             }
 
-            impl dars::Signature for #name {
+            impl da_rs::Signature for #name {
                 type Input = #input_struct;
                 type Output = #output_struct;
 
@@ -200,17 +200,17 @@ impl ToTokens for Signature {
                 }
 
                 #[inline]
-                fn input_fields(&self) -> &[dars::Field] {
-                    <#input_struct as dars::Model>::fields()
+                fn input_fields(&self) -> &[da_rs::Field] {
+                    <#input_struct as da_rs::Model>::fields()
                 }
 
                 #[inline]
-                fn output_fields(&self) -> &[dars::Field] {
-                    <#output_struct as dars::Model>::fields()
+                fn output_fields(&self) -> &[da_rs::Field] {
+                    <#output_struct as da_rs::Model>::fields()
                 }
 
                 #[inline]
-                fn field(&self, name: &str) -> Option<&dars::schemars::Schema> {
+                fn field(&self, name: &str) -> Option<&da_rs::schemars::Schema> {
                     self.fields.get(name)
                 }
             }

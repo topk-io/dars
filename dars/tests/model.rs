@@ -1,4 +1,4 @@
-use dars::{Field, Model};
+use da_rs::{Field, Model};
 
 #[test]
 fn test_model_fields() {
