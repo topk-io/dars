@@ -125,8 +125,6 @@ impl<S: Signature> JsonAdapter<S> {
     }
 
     fn format_input(&self, input: S::Input) -> Result<Message, Error> {
-        println!("input: {:?}", input);
-
         let a = match serde_json::to_value(input) {
             Ok(v) => v,
             Err(e) => {
