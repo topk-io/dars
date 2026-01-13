@@ -19,6 +19,20 @@ impl<S: Signature> Adapter<S> for JsonAdapter<S> {
     }
 
     fn parse(&self, output: String) -> Result<S::Output, Error> {
+        fn remove_between(s: &str, start: &str, end: &str) -> String {
+            if let (Some(start_idx), Some(end_idx)) = (s.find(start), s.find(end)) {
+                if end_idx >= start_idx {
+                    let end_idx = end_idx + end.len();
+                    let mut out = String::with_capacity(s.len());
+                    out.push_str(&s[..start_idx]);
+                    out.push_str(&s[end_idx..]);
+                    return out;
+                }
+            }
+            s.to_string()
+        }
+        let output = remove_between(&output, "<think>", "</think>");
+
         Ok(serde_json::from_str(&output)?)
     }
 }
@@ -105,6 +119,7 @@ impl<S: Signature> JsonAdapter<S> {
     }
 
     fn format_input(&self, input: S::Input) -> Result<Message, Error> {
+        println!("input: {:?}", input);
         match serde_json::to_value(input)? {
             Value::Object(kv) => {
                 let mut buf = String::new();
