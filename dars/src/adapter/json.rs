@@ -33,7 +33,13 @@ impl<S: Signature> Adapter<S> for JsonAdapter<S> {
         }
         let output = remove_between(&output, "<think>", "</think>");
 
-        Ok(serde_json::from_str(&output)?)
+        match serde_json::from_str(&output) {
+            Ok(v) => Ok(v),
+            Err(e) => {
+                println!("JSON Adapter::parse error: {:?}", e);
+                Err(Error::SerdeJson(e))
+            }
+        }
     }
 }
 
@@ -120,7 +126,16 @@ impl<S: Signature> JsonAdapter<S> {
 
     fn format_input(&self, input: S::Input) -> Result<Message, Error> {
         println!("input: {:?}", input);
-        match serde_json::to_value(input)? {
+
+        let a = match serde_json::to_value(input) {
+            Ok(v) => v,
+            Err(e) => {
+                println!("JSON Adapter::format_input error: {:?}", e);
+                return Err(Error::SerdeJson(e));
+            }
+        };
+
+        match a {
             Value::Object(kv) => {
                 let mut buf = String::new();
                 for (i, f) in self.signature.input_fields().iter().enumerate() {

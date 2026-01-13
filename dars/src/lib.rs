@@ -29,7 +29,7 @@ pub struct Field {
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("serde: {0}")]
-    SerdeJson(#[from] serde_json::Error),
+    SerdeJson(serde_json::Error),
 
     #[cfg(feature = "openai")]
     #[error("OpenAI: {0}")]
