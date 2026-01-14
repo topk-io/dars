@@ -36,7 +36,7 @@ impl<S: Signature> Adapter<S> for JsonAdapter<S> {
         match serde_json::from_str(&output) {
             Ok(v) => Ok(v),
             Err(e) => {
-                println!("JSON Adapter::parse error: {:?}", e);
+                println!("JSON Adapter::parse error: {:?}, output: {:?}", e, output);
                 Err(Error::SerdeJson(e))
             }
         }
@@ -128,7 +128,10 @@ impl<S: Signature> JsonAdapter<S> {
         let a = match serde_json::to_value(input) {
             Ok(v) => v,
             Err(e) => {
-                println!("JSON Adapter::format_input error: {:?}", e);
+                println!(
+                    "JSON Adapter::format_input error: {:?}, input: {:?}",
+                    e, input
+                );
                 return Err(Error::SerdeJson(e));
             }
         };
