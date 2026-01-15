@@ -4,8 +4,8 @@ use async_openai::{
     types::chat::{
         ChatCompletionRequestMessage, ChatCompletionRequestUserMessage,
         ChatCompletionRequestUserMessageContent, ChatCompletionRequestUserMessageContentPart,
-        CreateChatCompletionRequest, ImageDetail, ImageUrl, ResponseFormat,
-        ResponseFormatJsonSchema,
+        ChatCompletionToolChoiceOption, CreateChatCompletionRequest, ImageDetail, ImageUrl,
+        ResponseFormat, ResponseFormatJsonSchema, ToolChoiceOptions,
     },
 };
 use async_trait::async_trait;
@@ -58,6 +58,9 @@ impl<C: Config + 'static> LM for OpenAILM<C> {
             max_completion_tokens: self.model_config.max_tokens,
             top_p: self.model_config.top_p,
             response_format: schema.map(convert_schema_to_response_format),
+            tool_choice: Some(ChatCompletionToolChoiceOption::Mode(
+                ToolChoiceOptions::None,
+            )),
             ..Default::default()
         };
         for m in messages {
