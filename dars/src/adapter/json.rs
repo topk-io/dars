@@ -35,10 +35,7 @@ impl<S: Signature> Adapter<S> for JsonAdapter<S> {
 
         match serde_json::from_str(&output) {
             Ok(v) => Ok(v),
-            Err(e) => {
-                println!("JSON Adapter::parse error: {:?}, output: {:?}", e, output);
-                Err(Error::SerdeJson(e))
-            }
+            Err(e) => Err(Error::InvalidJsonOutput(output)),
         }
     }
 }
@@ -98,6 +95,7 @@ impl<S: Signature> JsonAdapter<S> {
             }
         }
         buf += "\n}";
+        buf += "\nIMPORTANT: When the JSON schema contains enums / union variants, you MUST use the exact variant strings from the schema. Do NOT invent or rename variants (e.g. do not change `Reason` to `ReasoningAction`).";
 
         // Instruction
         buf += "\nIn adhering to this structure, your objective is:\n";

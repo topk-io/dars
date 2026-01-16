@@ -58,9 +58,6 @@ impl<C: Config + 'static> LM for OpenAILM<C> {
             max_completion_tokens: self.model_config.max_tokens,
             top_p: self.model_config.top_p,
             response_format: schema.map(convert_schema_to_response_format),
-            tool_choice: Some(ChatCompletionToolChoiceOption::Mode(
-                ToolChoiceOptions::None,
-            )),
             ..Default::default()
         };
         for m in messages {
@@ -134,7 +131,8 @@ fn convert_schema_to_response_format(schema: Schema) -> ResponseFormat {
             name: "schema".into(),
             schema: Some(schema.to_value()),
             description: None,
-            strict: None,
+            // Enforce schema adherence (helps prevent enum variant drift like `Reason` -> `ReasoningAction`).
+            strict: Some(true),
         },
     }
 }
