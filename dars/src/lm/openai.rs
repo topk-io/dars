@@ -131,8 +131,7 @@ fn convert_schema_to_response_format(schema: Schema) -> ResponseFormat {
             name: "schema".into(),
             schema: Some(schema.to_value()),
             description: None,
-            // Enforce schema adherence (helps prevent enum variant drift like `Reason` -> `ReasoningAction`).
-            strict: Some(true),
+            strict: None,
         },
     }
 }
