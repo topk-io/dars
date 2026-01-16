@@ -4,8 +4,8 @@ use async_openai::{
     types::chat::{
         ChatCompletionRequestMessage, ChatCompletionRequestUserMessage,
         ChatCompletionRequestUserMessageContent, ChatCompletionRequestUserMessageContentPart,
-        CreateChatCompletionRequest, ImageDetail, ImageUrl, ResponseFormat,
-        ResponseFormatJsonSchema,
+        ChatCompletionToolChoiceOption, CreateChatCompletionRequest, ImageDetail, ImageUrl,
+        ResponseFormat, ResponseFormatJsonSchema, ToolChoiceOptions,
     },
 };
 use async_trait::async_trait;

@@ -31,6 +31,9 @@ pub enum Error {
     #[error("serde: {0}")]
     SerdeJson(#[from] serde_json::Error),
 
+    #[error("invalid json output: {0}")]
+    InvalidJsonOutput(String),
+
     #[cfg(feature = "openai")]
     #[error("OpenAI: {0}")]
     OpenAI(#[from] async_openai::error::OpenAIError),

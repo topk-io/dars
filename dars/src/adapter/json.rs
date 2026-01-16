@@ -19,7 +19,24 @@ impl<S: Signature> Adapter<S> for JsonAdapter<S> {
     }
 
     fn parse(&self, output: String) -> Result<S::Output, Error> {
-        Ok(serde_json::from_str(&output)?)
+        fn remove_between(s: &str, start: &str, end: &str) -> String {
+            if let (Some(start_idx), Some(end_idx)) = (s.find(start), s.find(end)) {
+                if end_idx >= start_idx {
+                    let end_idx = end_idx + end.len();
+                    let mut out = String::with_capacity(s.len());
+                    out.push_str(&s[..start_idx]);
+                    out.push_str(&s[end_idx..]);
+                    return out;
+                }
+            }
+            s.to_string()
+        }
+        let output = remove_between(&output, "<think>", "</think>");
+
+        match serde_json::from_str(&output) {
+            Ok(v) => Ok(v),
+            Err(e) => Err(Error::InvalidJsonOutput(output)),
+        }
     }
 }
 
@@ -78,6 +95,7 @@ impl<S: Signature> JsonAdapter<S> {
             }
         }
         buf += "\n}";
+        buf += "\nIMPORTANT: When the JSON schema contains enums / union variants, you MUST use the exact variant strings from the schema. Do NOT invent or rename variants (e.g. do not change `Reason` to `ReasoningAction`).";
 
         // Instruction
         buf += "\nIn adhering to this structure, your objective is:\n";
