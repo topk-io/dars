@@ -59,7 +59,7 @@ impl<C: Config + 'static> LM for OpenAILM<C> {
             max_completion_tokens: self.model_config.max_tokens,
             top_p: self.model_config.top_p,
             response_format: schema.map(convert_schema_to_response_format),
-            reasoning_effort: self.model_config.reasoning_effort,
+            reasoning_effort: self.model_config.reasoning_effort.clone(),
             ..Default::default()
         };
         for m in messages {
