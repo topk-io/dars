@@ -4,7 +4,7 @@ use async_openai::{
     types::chat::{
         ChatCompletionRequestMessage, ChatCompletionRequestUserMessage,
         ChatCompletionRequestUserMessageContent, ChatCompletionRequestUserMessageContentPart,
-        CreateChatCompletionRequest, ImageDetail, ImageUrl, ResponseFormat,
+        CreateChatCompletionRequest, ImageDetail, ImageUrl, ReasoningEffort, ResponseFormat,
         ResponseFormatJsonSchema,
     },
 };
@@ -22,6 +22,7 @@ pub struct ModelConfig {
     pub temperature: Option<f32>,
     pub max_tokens: Option<u32>,
     pub top_p: Option<f32>,
+    pub reasoning_effort: Option<ReasoningEffort>,
 }
 
 impl ModelConfig {
@@ -58,6 +59,7 @@ impl<C: Config + 'static> LM for OpenAILM<C> {
             max_completion_tokens: self.model_config.max_tokens,
             top_p: self.model_config.top_p,
             response_format: schema.map(convert_schema_to_response_format),
+            reasoning_effort: self.model_config.reasoning_effort.clone(),
             ..Default::default()
         };
         for m in messages {
