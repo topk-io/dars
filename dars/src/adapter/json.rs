@@ -19,7 +19,11 @@ impl<S: Signature> Adapter<S> for JsonAdapter<S> {
     }
 
     fn parse(&self, output: String) -> Result<S::Output, Error> {
-        Ok(serde_json::from_str(&output)?)
+        let mut output = output.as_str();
+        // Strip ```json``` quotes from the content (if present)
+        output = output.strip_prefix("```json").unwrap_or(output);
+        output = output.strip_suffix("```").unwrap_or(output);
+        Ok(serde_json::from_str(output)?)
     }
 }
 
@@ -259,5 +263,32 @@ mod tests {
                 text: "and some more text".to_string()
             }
         );
+    }
+
+    #[test]
+    fn test_parse_response() {
+        // re-export crate as da_rs
+        mod da_rs {
+            pub use crate::*;
+        }
+        use da_rs::*;
+
+        #[Signature]
+        struct TestSignature {
+            #[output]
+            name: String,
+        }
+
+        let adapter = JsonAdapter::new(TestSignature::new());
+
+        // Parse with ```json``` quotes
+        let parsed = adapter
+            .parse("```json{\"name\": \"test\"}```".to_string())
+            .unwrap();
+        assert_eq!(parsed.name, "test");
+
+        // Parse without ```json``` quotes
+        let parsed = adapter.parse("{\"name\": \"test\"}".to_string()).unwrap();
+        assert_eq!(parsed.name, "test");
     }
 }

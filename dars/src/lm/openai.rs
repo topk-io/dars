@@ -23,6 +23,7 @@ pub struct ModelConfig {
     pub max_tokens: Option<u32>,
     pub top_p: Option<f32>,
     pub reasoning_effort: Option<ReasoningEffort>,
+    pub json_schema: bool,
 }
 
 impl ModelConfig {
@@ -58,16 +59,31 @@ impl<C: Config + 'static> LM for OpenAILM<C> {
             temperature: self.model_config.temperature,
             max_completion_tokens: self.model_config.max_tokens,
             top_p: self.model_config.top_p,
-            response_format: schema.map(convert_schema_to_response_format),
             reasoning_effort: self.model_config.reasoning_effort.clone(),
             ..Default::default()
         };
+
+        // Add the response format if JSON schema is enabled
+        if self.model_config.json_schema {
+            req.response_format = schema.map(convert_schema_to_response_format);
+        }
+
+        // Add the messages to the request
         for m in messages {
             req.messages.push(m.try_into()?);
         }
+
+        // Call the API
         let response = self.client.chat().create(req).await?;
-        let content = response.choices[0].message.content.clone();
-        Ok(content.unwrap_or_default())
+
+        // Get the first response message
+        let content = response.choices[0]
+            .message
+            .content
+            .clone()
+            .unwrap_or_default();
+
+        Ok(content)
     }
 }
 
