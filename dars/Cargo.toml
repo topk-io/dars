@@ -23,6 +23,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 schemars = { version = "1.0" }
 regex = { version = "1.12" }
+tracing = { version = "0.1" }
 # openai feature
 async-openai = { version = "0.31", optional = true, features = [
     "_api",
@@ -32,3 +33,4 @@ async-openai = { version = "0.31", optional = true, features = [
 
 [dev-dependencies]
 tokio = { version = "1.48", features = ["rt", "test-util"] }
+rstest = { version = "0.18" }

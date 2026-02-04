@@ -1,6 +1,8 @@
 use regex::Regex;
 use schemars::{Schema, schema_for};
+use serde::de::DeserializeOwned;
 use serde_json::Value;
+use tracing::{error, warn};
 
 use super::Adapter;
 use crate::{
@@ -19,11 +21,26 @@ impl<S: Signature> Adapter<S> for JsonAdapter<S> {
     }
 
     fn parse(&self, output: String) -> Result<S::Output, Error> {
-        let mut output = output.as_str();
         // Strip ```json``` quotes from the content (if present)
-        output = output.strip_prefix("```json").unwrap_or(output);
-        output = output.strip_suffix("```").unwrap_or(output);
-        Ok(serde_json::from_str(output)?)
+        let output = output.strip_prefix("```json").unwrap_or(&output);
+        let output = output.strip_suffix("```").unwrap_or(&output);
+
+        // Try to parse `output` as a JSON object directly.
+        match serde_json::from_str(&output) {
+            Ok(value) => Ok(value),
+            Err(e) => {
+                warn!("Failed to parse strict JSON: {output:?}: {e:?}");
+
+                // If strict JSON parsing fails, try speculative parsing.
+                match try_speculative_json::<S::Output>(&output) {
+                    Some(value) => Ok(value),
+                    None => {
+                        error!("Failed to parse speculative JSON: {output:?}");
+                        return Err(Error::SerdeJson(e));
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -101,6 +118,10 @@ impl<S: Signature> JsonAdapter<S> {
                 }
             }
             buf += ".";
+            // Add JSON formatting instructions
+            buf += "\n\nReturn ONLY a valid JSON object.\n";
+            buf += "Do not include any text before or after the JSON.\n";
+            buf += "Do not use markdown.\n";
         } else {
             buf += &self.signature.instruction().trim();
         }
@@ -109,7 +130,7 @@ impl<S: Signature> JsonAdapter<S> {
     }
 
     fn format_input(&self, input: S::Input) -> Result<Message, Error> {
-        match serde_json::to_value(input)? {
+        match serde_json::to_value(&input)? {
             Value::Object(kv) => {
                 let mut buf = String::new();
                 for (i, f) in self.signature.input_fields().iter().enumerate() {
@@ -135,6 +156,22 @@ impl<S: Signature> JsonAdapter<S> {
             _ => unreachable!(),
         }
     }
+}
+
+/// Try to parse the output as a JSON object surrounded by gibberish,
+/// returning the first successful parse.
+/// Uses greedy regex matching to find nested JSON objects.
+fn try_speculative_json<T: DeserializeOwned>(output: &str) -> Option<T> {
+    // Greedy regex to match JSON objects including nested ones
+    let re = Regex::new(r"\{.*\}").unwrap();
+
+    for mat in re.find_iter(output) {
+        if let Ok(value) = serde_json::from_str::<T>(mat.as_str()) {
+            return Some(value);
+        }
+    }
+
+    None
 }
 
 fn parse_content(buf: String) -> Vec<MessageContent> {
@@ -219,6 +256,13 @@ fn fmt_type(ty: &Value, buf: &mut String) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
+
+    // re-export crate as da_rs
+    mod da_rs {
+        pub use crate::*;
+    }
+    use da_rs::*;
 
     #[test]
     fn test_parse_content() {
@@ -267,12 +311,6 @@ mod tests {
 
     #[test]
     fn test_parse_response() {
-        // re-export crate as da_rs
-        mod da_rs {
-            pub use crate::*;
-        }
-        use da_rs::*;
-
         #[Signature]
         struct TestSignature {
             #[output]
@@ -290,5 +328,93 @@ mod tests {
         // Parse without ```json``` quotes
         let parsed = adapter.parse("{\"name\": \"test\"}".to_string()).unwrap();
         assert_eq!(parsed.name, "test");
+    }
+
+    #[rstest]
+    #[case(
+        "Here is the result: {\"name\": \"Alice\", \"value\": 42} and that's it",
+        "Alice",
+        42
+    )]
+    #[case(
+        "{\"name\": \"Bob\", \"value\": 100} followed by some text",
+        "Bob",
+        100
+    )]
+    #[case(
+        "Some text before {\"name\": \"Charlie\", \"value\": 200}",
+        "Charlie",
+        200
+    )]
+    #[case("```json{\"name\": \"David\", \"value\": 300}```", "David", 300)]
+    #[case(
+        "Before ```json{\"name\": \"Eve\", \"value\": 400}``` after",
+        "Eve",
+        400
+    )]
+    #[case("Text {\"name\": \"Grace\", \"value\": 600} more text", "Grace", 600)]
+    #[case(
+        "Array: [1, 2, 3] Object: {\"name\": \"Henry\", \"value\": 700}",
+        "Henry",
+        700
+    )]
+    #[case(
+        "Nested: {\"name\": \"Ivy\", \"value\": 800, \"nested\": {\"key\": \"val\"}}",
+        "Ivy",
+        800
+    )]
+    fn test_speculative_json_extraction(
+        #[case] input: &str,
+        #[case] expected_name: &str,
+        #[case] expected_value: i32,
+    ) {
+        #[Signature]
+        struct TestSignature {
+            #[output]
+            name: String,
+            #[output]
+            value: i32,
+        }
+
+        let adapter = JsonAdapter::new(TestSignature::new());
+        let parsed = adapter
+            .parse(input.to_string())
+            .unwrap_or_else(|e| panic!("Failed to parse: {:?}\nError: {:?}", input, e));
+
+        assert_eq!(parsed.name, expected_name, "Failed for input: {:?}", input);
+        assert_eq!(
+            parsed.value, expected_value,
+            "Failed for input: {:?}",
+            input
+        );
+    }
+
+    #[rstest]
+    #[case("This is just plain text with no JSON")]
+    #[case("Text with { but no closing brace")]
+    #[case("Text with } but no opening brace")]
+    #[case("Text {name: invalid json} more text")]
+    #[case("")]
+    #[case("Text {\"outer\": {\"inner\": \"value\"}} more text")]
+    #[case("Text {\"name\": \"test\", \"value\":} more text")]
+    #[case("Text {\"name\": \"unclosed string} more text")]
+    #[case("First: {\"invalid\": true} Second: {\"name\": \"Frank\", \"value\": 500}")]
+    fn test_speculative_json_extraction_failures(#[case] input: &str) {
+        #[Signature]
+        struct TestSignature {
+            #[output]
+            name: String,
+            #[output]
+            value: i32,
+        }
+
+        let adapter = JsonAdapter::new(TestSignature::new());
+        let result = adapter.parse(input.to_string());
+        assert!(
+            result.is_err(),
+            "Expected parsing to fail for input: {:?}, but got: {:?}",
+            input,
+            result
+        );
     }
 }
