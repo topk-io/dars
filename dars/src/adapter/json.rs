@@ -163,7 +163,7 @@ impl<S: Signature> JsonAdapter<S> {
 /// Uses greedy regex matching to find nested JSON objects.
 fn try_speculative_json<T: DeserializeOwned>(output: &str) -> Option<T> {
     // Greedy regex to match JSON objects including nested ones
-    let re = Regex::new(r"\{.*\}").unwrap();
+    let re = Regex::new(r"(?s)\{.*\}").unwrap();
 
     for mat in re.find_iter(output) {
         if let Ok(value) = serde_json::from_str::<T>(mat.as_str()) {
@@ -359,7 +359,7 @@ mod tests {
         700
     )]
     #[case(
-        "Nested: {\"name\": \"Ivy\", \"value\": 800, \"nested\": {\"key\": \"val\"}}",
+        "Multiline:\n{\n\t\"name\": \"Ivy\",\n\t\"value\": 800\n}\n```\n\nNote: trailing markdown",
         "Ivy",
         800
     )]
