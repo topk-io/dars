@@ -118,13 +118,13 @@ impl<S: Signature> JsonAdapter<S> {
                 }
             }
             buf += ".";
-            // Add JSON formatting instructions
-            buf += "\n\nReturn ONLY a valid JSON object.\n";
-            buf += "Do not include any text before or after the JSON.\n";
-            buf += "Do not use markdown.\n";
         } else {
             buf += &self.signature.instruction().trim();
         }
+
+        // Add JSON formatting instructions
+        buf += "\n\nReturn ONLY a valid JSON object. Do not include any text before or after the JSON.\n";
+        buf += "IMPORTANT: If you cannot answer the question, return an empty JSON object conforming to the schema.";
 
         Message::System { instruction: buf }
     }
