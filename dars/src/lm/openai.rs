@@ -10,6 +10,7 @@ use async_openai::{
 };
 use async_trait::async_trait;
 use schemars::Schema;
+use tracing::debug;
 
 use crate::{
     Error,
@@ -74,14 +75,12 @@ impl<C: Config + 'static> LM for OpenAILM<C> {
         }
 
         // Call the API
-        let response = self.client.chat().create(req).await?;
+        debug!("ChatCompletionRequest: {:#?}", req);
+        let resp = self.client.chat().create(req).await?;
+        debug!("ChatCompletionResponse: {:#?}", resp);
 
         // Get the first response message
-        let content = response.choices[0]
-            .message
-            .content
-            .clone()
-            .unwrap_or_default();
+        let content = resp.choices[0].message.content.clone().unwrap_or_default();
 
         Ok(content)
     }
